@@ -37,7 +37,8 @@ mod for_std {
     use super::*;
     use std::time::Duration;
 
-    pub struct StdDelayNs;
+    #[derive(Default)]
+    pub struct StdDelayNs {}
 
     impl DelayNs for StdDelayNs {
         #[inline]
@@ -70,7 +71,7 @@ mod for_std {
 
         #[test]
         fn std_delay() {
-            let d = StdDelayNs {};
+            let d = StdDelayNs::default();
             test_delay(d);
         }
 

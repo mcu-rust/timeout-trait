@@ -5,6 +5,7 @@ use super::{
 use std::time::{Duration, Instant};
 
 /// [`TimeoutNs`] implementation.
+#[derive(Default)]
 pub struct StdTimeoutNs {}
 
 impl TimeoutNs for StdTimeoutNs {

@@ -3,7 +3,7 @@
 //!
 //! # Cargo Features
 //!
-//! - `std`: Disabled by default.
+//! - `std`: Used for unit test. Disabled by default.
 
 pub mod delay_impls;
 pub mod fake_impls;

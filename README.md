@@ -4,7 +4,7 @@ Traits used to wait and timeout in a `no-std` embedded system.
 
 ## Cargo Features
 
-- `std`: Disabled by default.
+- `std`: Used for unit test. Disabled by default.
 
 ## Usage
 ```shell

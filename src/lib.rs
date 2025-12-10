@@ -5,6 +5,8 @@
 //!
 //! - `std`: Used for unit test. Disabled by default.
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 pub mod delay_impls;
 pub mod fake_impls;
 pub mod prelude;

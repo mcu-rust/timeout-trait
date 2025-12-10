@@ -1,0 +1,22 @@
+[package]
+    authors = ["Jalon Wong <jalonwong@gmail.com>"]
+    description = "Traits used to wait and timeout."
+    documentation = "https://docs.rs/timeout-trait"
+    edition = "2024"
+    keywords = ["embedded", "no-std"]
+    license = "MIT OR Apache-2.0"
+    name = "timeout-trait"
+    readme = "README.md"
+    repository = "https://github.com/mcu-rust/timeout-trait"
+    version = "0.1.0"
+
+    [package.metadata.docs.rs]
+        features = ["std"]
+
+[features]
+    std = ["critical-section/std"]
+
+[dependencies]
+    critical-section = "1"
+    embedded-hal = "1"
+    fugit = "0.3"

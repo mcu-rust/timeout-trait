@@ -22,9 +22,11 @@ pub use fugit::{self, KilohertzU32, MicrosDurationU32};
 pub use tick_impl::{TickTimeoutNs, TickTimeoutState};
 
 pub trait TimeoutNs {
-    fn start_ns(timeout: u32) -> impl TimeoutState;
-    fn start_us(timeout: u32) -> impl TimeoutState;
-    fn start_ms(timeout: u32) -> impl TimeoutState;
+    type TimeoutState: TimeoutState;
+
+    fn start_ns(timeout: u32) -> Self::TimeoutState;
+    fn start_us(timeout: u32) -> Self::TimeoutState;
+    fn start_ms(timeout: u32) -> Self::TimeoutState;
 
     fn ns_with(timeout: u32, mut f: impl FnMut() -> bool) -> bool {
         let mut t = Self::start_ns(timeout);

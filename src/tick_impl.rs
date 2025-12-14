@@ -9,18 +9,20 @@ impl<T> TimeoutNs for TickTimeoutNs<T>
 where
     T: TickInstant,
 {
+    type TimeoutState = TickTimeoutState<T>;
+
     #[inline]
-    fn start_ns(timeout: u32) -> impl TimeoutState {
+    fn start_ns(timeout: u32) -> Self::TimeoutState {
         TickTimeoutState::<T>::new_ns(timeout)
     }
 
     #[inline]
-    fn start_us(timeout: u32) -> impl TimeoutState {
+    fn start_us(timeout: u32) -> Self::TimeoutState {
         TickTimeoutState::<T>::new_us(timeout)
     }
 
     #[inline]
-    fn start_ms(timeout: u32) -> impl TimeoutState {
+    fn start_ms(timeout: u32) -> Self::TimeoutState {
         TickTimeoutState::<T>::new_ms(timeout)
     }
 }

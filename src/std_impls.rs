@@ -9,21 +9,23 @@ use std::time::{Duration, Instant};
 pub struct StdTimeoutNs {}
 
 impl TimeoutNs for StdTimeoutNs {
-    fn start_ns(timeout: u32) -> impl TimeoutState {
+    type TimeoutState = StdTimeoutState;
+
+    fn start_ns(timeout: u32) -> Self::TimeoutState {
         StdTimeoutState {
             timeout: Duration::from_nanos(timeout.into()),
             start_time: Instant::now(),
         }
     }
 
-    fn start_us(timeout: u32) -> impl TimeoutState {
+    fn start_us(timeout: u32) -> Self::TimeoutState {
         StdTimeoutState {
             timeout: Duration::from_micros(timeout.into()),
             start_time: Instant::now(),
         }
     }
 
-    fn start_ms(timeout: u32) -> impl TimeoutState {
+    fn start_ms(timeout: u32) -> Self::TimeoutState {
         StdTimeoutState {
             timeout: Duration::from_millis(timeout.into()),
             start_time: Instant::now(),
@@ -76,6 +78,10 @@ mod tests {
     use crate::TickTimeoutNs;
     use std::{thread::sleep, time::Duration};
 
+    struct UseTimeout<T: TimeoutState> {
+        interval: T,
+    }
+
     fn test_timeout<T: TimeoutNs>() {
         let mut t = T::start_ms(500);
         assert!(!t.timeout());
@@ -97,6 +103,11 @@ mod tests {
             sleep(Duration::from_nanos(1));
             true
         }));
+
+        let mut u = UseTimeout {
+            interval: T::start_ms(1),
+        };
+        u.interval.timeout();
     }
 
     #[test]

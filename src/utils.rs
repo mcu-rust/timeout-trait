@@ -1,22 +1,18 @@
-use super::{fugit::KilohertzU32, prelude::*};
-use core::{cell::Cell, marker::PhantomData};
+use super::fugit::KilohertzU32;
+use core::cell::Cell;
 
-/// Can be used as a static holder
-pub struct FrequencyHolder<T> {
+/// Can be used as a static holder.
+/// You can use `AtomicU32` or `AtomicCell` instead.
+pub struct FrequencyHolder {
     frequency: Cell<KilohertzU32>,
-    _t: PhantomData<T>,
 }
 
-unsafe impl<T: TickInstant> Sync for FrequencyHolder<T> {}
+unsafe impl Sync for FrequencyHolder {}
 
-impl<T> FrequencyHolder<T>
-where
-    T: TickInstant,
-{
+impl FrequencyHolder {
     pub const fn new(frequency: KilohertzU32) -> Self {
         Self {
             frequency: Cell::new(frequency),
-            _t: PhantomData,
         }
     }
 

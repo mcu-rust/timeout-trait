@@ -13,7 +13,6 @@ pub mod prelude;
 #[cfg(feature = "std")]
 pub mod std_impls;
 pub mod tick_impl;
-pub mod utils;
 
 pub use delay_impls::TickDelay;
 pub use embedded_hal;

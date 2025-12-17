@@ -8,24 +8,30 @@ use std::time::{Duration, Instant};
 #[derive(Default)]
 pub struct StdTimeoutNs {}
 
+impl StdTimeoutNs {
+    pub const fn new() -> Self {
+        Self {}
+    }
+}
+
 impl TimeoutNs for StdTimeoutNs {
     type TimeoutState = StdTimeoutState;
 
-    fn start_ns(timeout: u32) -> Self::TimeoutState {
+    fn start_ns(&self, timeout: u32) -> Self::TimeoutState {
         StdTimeoutState {
             timeout: Duration::from_nanos(timeout.into()),
             start_time: Instant::now(),
         }
     }
 
-    fn start_us(timeout: u32) -> Self::TimeoutState {
+    fn start_us(&self, timeout: u32) -> Self::TimeoutState {
         StdTimeoutState {
             timeout: Duration::from_micros(timeout.into()),
             start_time: Instant::now(),
         }
     }
 
-    fn start_ms(timeout: u32) -> Self::TimeoutState {
+    fn start_ms(&self, timeout: u32) -> Self::TimeoutState {
         StdTimeoutState {
             timeout: Duration::from_millis(timeout.into()),
             start_time: Instant::now(),
@@ -82,8 +88,8 @@ mod tests {
         interval: T,
     }
 
-    fn test_timeout<T: TimeoutNs>() {
-        let mut t = T::start_ms(500);
+    fn test_timeout<T: TimeoutNs>(timeout: T) {
+        let mut t = timeout.start_ms(500);
         assert!(!t.timeout());
         sleep(Duration::from_millis(260));
         assert!(!t.timeout());
@@ -99,25 +105,25 @@ mod tests {
         assert!(t.timeout());
         assert!(!t.timeout());
 
-        assert!(T::ns_with(100, || {
+        assert!(timeout.ns_with(100, || {
             sleep(Duration::from_nanos(1));
             true
         }));
 
         let mut u = UseTimeout {
-            interval: T::start_ms(1),
+            interval: timeout.start_ms(1),
         };
         u.interval.timeout();
     }
 
     #[test]
     fn std_timeout() {
-        test_timeout::<StdTimeoutNs>();
+        test_timeout(StdTimeoutNs {});
     }
 
     #[test]
     fn tick_timeout() {
-        test_timeout::<TickTimeoutNs<Instant>>();
+        test_timeout(TickTimeoutNs::<Instant>::new());
     }
 
     #[test]

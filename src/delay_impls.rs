@@ -21,7 +21,7 @@ where
 {
     #[inline]
     fn delay_ns(&mut self, ns: u32) {
-        let mut t = TickTimeoutNs::<T>::start_ns(ns);
+        let mut t = TickTimeoutNs::<T>::new().start_ns(ns);
         while !t.timeout() {
             // For unit test
             #[cfg(feature = "std")]

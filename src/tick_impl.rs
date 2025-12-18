@@ -121,11 +121,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core::cell::Cell;
+    use core::sync::atomic::{AtomicU32, Ordering};
     use fugit::{ExtU32, KilohertzU32, NanosDurationU32, RateExtU32};
 
-    static TICK_SOURCE: critical_section::Mutex<Cell<u32>> =
-        critical_section::Mutex::new(Cell::new(0));
+    static TICK_SOURCE: AtomicU32 = AtomicU32::new(0);
 
     #[derive(Clone, Copy)]
     pub struct MockInstant {
@@ -135,10 +134,7 @@ mod tests {
     impl MockInstant {
         fn add_time(t: NanosDurationU32) {
             let tick = t.to_nanos();
-            critical_section::with(|cs| {
-                let v = TICK_SOURCE.borrow(cs).get().wrapping_add(tick);
-                TICK_SOURCE.borrow(cs).set(v);
-            })
+            TICK_SOURCE.fetch_add(tick, Ordering::Relaxed);
         }
     }
 
@@ -148,9 +144,9 @@ mod tests {
         }
 
         fn now() -> Self {
-            critical_section::with(|cs| Self {
-                tick: TICK_SOURCE.borrow(cs).get(),
-            })
+            Self {
+                tick: TICK_SOURCE.load(Ordering::Relaxed),
+            }
         }
 
         fn tick_since(self, earlier: Self) -> u32 {

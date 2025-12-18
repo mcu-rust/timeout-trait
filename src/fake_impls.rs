@@ -3,12 +3,12 @@ use super::{
     prelude::*,
     tick_impl::{TickTimeoutNs, TickTimeoutState},
 };
-use core::cell::Cell;
+use core::sync::atomic::{AtomicU32, Ordering};
 
 pub type FakeTimeoutNs = TickTimeoutNs<FakeInstant>;
 pub type FakeTimeoutState = TickTimeoutState<FakeInstant>;
 
-static COUNTER: critical_section::Mutex<Cell<u32>> = critical_section::Mutex::new(Cell::new(0));
+static COUNTER: AtomicU32 = AtomicU32::new(0);
 
 #[derive(Clone, Copy)]
 pub struct FakeInstant {
@@ -21,11 +21,10 @@ impl TickInstant for FakeInstant {
     }
 
     fn now() -> Self {
-        critical_section::with(|cs| {
-            let c = COUNTER.borrow(cs).get() + 1;
-            COUNTER.borrow(cs).set(c);
-            Self { count: c }
-        })
+        COUNTER.fetch_add(1, Ordering::Relaxed);
+        Self {
+            count: COUNTER.load(Ordering::Relaxed),
+        }
     }
 
     fn tick_since(self, earlier: Self) -> u32 {

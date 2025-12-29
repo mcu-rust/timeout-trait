@@ -2,15 +2,11 @@ use super::{
     TickDuration,
     fugit::{KilohertzU32, RateExtU32},
     prelude::*,
-    tick_impl::{TickTimeoutNs, TickTimeoutState},
 };
-
-pub type FakeTimeoutNs = TickTimeoutNs<FakeTickInstant>;
-pub type FakeTimeoutState = TickTimeoutState<FakeTickInstant>;
 
 #[derive(Clone)]
 pub struct FakeTickInstant {
-    count: u64,
+    elapsed: u64,
 }
 
 impl TickInstant for FakeTickInstant {
@@ -21,19 +17,17 @@ impl TickInstant for FakeTickInstant {
 
     #[inline]
     fn now() -> Self {
-        Self { count: 0 }
+        Self { elapsed: 0 }
     }
 
     #[inline]
     fn elapsed(&mut self) -> TickDuration<Self> {
-        self.count = self.count.wrapping_add(1);
-        TickDuration::from_ticks(self.count)
+        self.elapsed = self.elapsed.wrapping_add(1);
+        TickDuration::from_ticks(self.elapsed)
     }
 
     #[inline]
-    fn add(&self, dur: &TickDuration<Self>) -> Self {
-        Self {
-            count: self.count.wrapping_add(dur.ticks()),
-        }
+    fn move_forward(&mut self, dur: &TickDuration<Self>) {
+        self.elapsed = self.elapsed.saturating_sub(dur.ticks());
     }
 }

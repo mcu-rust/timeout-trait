@@ -1,4 +1,6 @@
-use super::{embedded_hal::delay::DelayNs, prelude::*, tick_impl::TickTimeoutNs};
+use crate::TickDuration;
+
+use super::{embedded_hal::delay::DelayNs, prelude::*};
 use core::marker::PhantomData;
 
 /// [`DelayNs`] implementation
@@ -21,8 +23,9 @@ where
 {
     #[inline]
     fn delay_ns(&mut self, ns: u32) {
-        let mut t = TickTimeoutNs::<T>::new().start_ns(ns);
-        while !t.timeout() {
+        let mut t = T::now();
+        let dur = TickDuration::<T>::from_nanos(ns);
+        while !t.timeout(&dur) {
             // For unit test
             #[cfg(feature = "std")]
             std::thread::sleep(std::time::Duration::from_nanos(1));

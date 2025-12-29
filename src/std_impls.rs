@@ -5,64 +5,6 @@ use super::{
 };
 use std::time::{Duration, Instant};
 
-/// [`TimeoutNs`] implementation.
-#[derive(Default)]
-pub struct StdTimeoutNs {}
-
-impl StdTimeoutNs {
-    pub const fn new() -> Self {
-        Self {}
-    }
-}
-
-impl TimeoutNs for StdTimeoutNs {
-    type TimeoutState = StdTimeoutState;
-
-    fn start_ns(&self, timeout: u32) -> Self::TimeoutState {
-        StdTimeoutState {
-            timeout: Duration::from_nanos(timeout.into()),
-            start_time: Instant::now(),
-        }
-    }
-
-    fn start_us(&self, timeout: u32) -> Self::TimeoutState {
-        StdTimeoutState {
-            timeout: Duration::from_micros(timeout.into()),
-            start_time: Instant::now(),
-        }
-    }
-
-    fn start_ms(&self, timeout: u32) -> Self::TimeoutState {
-        StdTimeoutState {
-            timeout: Duration::from_millis(timeout.into()),
-            start_time: Instant::now(),
-        }
-    }
-}
-
-/// [`TimeoutState`] implementation for.
-pub struct StdTimeoutState {
-    timeout: Duration,
-    start_time: Instant,
-}
-
-impl TimeoutState for StdTimeoutState {
-    #[inline]
-    fn timeout(&mut self) -> bool {
-        if self.start_time.elapsed() >= self.timeout {
-            self.start_time += self.timeout;
-            true
-        } else {
-            false
-        }
-    }
-
-    #[inline(always)]
-    fn restart(&mut self) {
-        self.start_time = Instant::now();
-    }
-}
-
 #[derive(Clone)]
 pub struct StdTickInstant(Instant);
 
@@ -84,27 +26,27 @@ impl TickInstant for StdTickInstant {
     }
 
     #[inline]
-    fn add(&self, dur: &TickDuration<Self>) -> Self {
-        Self(
-            self.0
-                .checked_add(Duration::from_micros(dur.ticks()))
-                .unwrap(),
-        )
+    fn move_forward(&mut self, dur: &TickDuration<Self>) {
+        self.0 = self
+            .0
+            .checked_add(Duration::from_micros(dur.ticks()))
+            .unwrap();
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::TickTimeout;
+
     use super::*;
-    use crate::TickTimeoutNs;
     use std::{thread::sleep, time::Duration};
 
-    struct UseTimeout<T: TimeoutState> {
-        interval: T,
+    struct UseTimeout<T: TickInstant> {
+        interval: TickTimeout<T>,
     }
 
-    fn test_timeout<T: TimeoutNs>(timeout: T) {
-        let mut t = timeout.start_ms(500);
+    fn test_timeout<T: TickInstant>() {
+        let mut t = TickTimeout::<T>::from_millis(500);
         assert!(!t.timeout());
         sleep(Duration::from_millis(260));
         assert!(!t.timeout());
@@ -120,25 +62,21 @@ mod tests {
         assert!(t.timeout());
         assert!(!t.timeout());
 
-        assert!(timeout.ns_with(100, || {
+        let dur = TickDuration::<T>::from_nanos(100);
+        assert!(T::now().timeout_with(&dur, || {
             sleep(Duration::from_nanos(1));
             true
         }));
 
         let mut u = UseTimeout {
-            interval: timeout.start_ms(1),
+            interval: TickTimeout::<T>::from_millis(1),
         };
         u.interval.timeout();
     }
 
     #[test]
-    fn std_timeout() {
-        test_timeout(StdTimeoutNs {});
-    }
-
-    #[test]
     fn tick_timeout() {
-        test_timeout(TickTimeoutNs::<StdTickInstant>::new());
+        test_timeout::<StdTickInstant>();
     }
 
     #[test]

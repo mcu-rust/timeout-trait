@@ -50,6 +50,7 @@ mod for_std {
     #[cfg(test)]
     mod tests {
         use super::*;
+        use crate::std_impls::StdTickInstant;
         use std::time::{Duration, Instant};
 
         fn test_delay(mut d: impl DelayNs) {
@@ -77,7 +78,7 @@ mod for_std {
 
         #[test]
         fn tick_delay() {
-            let d = TickDelay::<Instant>::default();
+            let d = TickDelay::<StdTickInstant>::default();
             test_delay(d);
         }
     }

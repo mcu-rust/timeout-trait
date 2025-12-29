@@ -8,6 +8,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod delay_impls;
+pub mod duration;
 pub mod fake_impls;
 pub mod prelude;
 #[cfg(feature = "std")]
@@ -19,6 +20,8 @@ pub use embedded_hal;
 pub use fake_impls::*;
 pub use fugit::{self, KilohertzU32, MicrosDurationU32};
 pub use tick_impl::{TickTimeoutNs, TickTimeoutState};
+
+use duration::TickDuration;
 
 pub trait TimeoutNs {
     type TimeoutState: TimeoutState;
@@ -65,13 +68,27 @@ pub trait TimeoutState {
     fn restart(&mut self);
 }
 
-pub trait TickInstant: Copy {
+/// It doesn't require operation interfaces on `TickInstant` itself.
+/// Embedded systems can thus implement only the relative time version.
+pub trait TickInstant: Clone {
     fn frequency() -> KilohertzU32;
     fn now() -> Self;
-    /// Returns the amount of ticks elapsed from another instant to this one.
-    fn tick_since(self, earlier: Self) -> u32;
     /// Returns the amount of ticks elapsed since this instant.
-    fn tick_elapsed(self) -> u32 {
-        Self::now().tick_since(self)
+    fn elapsed(&mut self) -> TickDuration<Self>;
+    #[must_use]
+    fn add(&self, dur: &TickDuration<Self>) -> Self;
+
+    #[inline]
+    fn timeout(&mut self, dur: &TickDuration<Self>) -> bool {
+        &self.elapsed() >= dur
+    }
+
+    fn time_left(&mut self, dur: &TickDuration<Self>) -> TickDuration<Self> {
+        let elapsed = &self.elapsed();
+        if elapsed >= dur {
+            TickDuration::ZERO
+        } else {
+            dur - elapsed
+        }
     }
 }

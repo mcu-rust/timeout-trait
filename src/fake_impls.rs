@@ -1,33 +1,39 @@
 use super::{
+    TickDuration,
     fugit::{KilohertzU32, RateExtU32},
     prelude::*,
     tick_impl::{TickTimeoutNs, TickTimeoutState},
 };
-use core::sync::atomic::{AtomicU32, Ordering};
 
-pub type FakeTimeoutNs = TickTimeoutNs<FakeInstant>;
-pub type FakeTimeoutState = TickTimeoutState<FakeInstant>;
+pub type FakeTimeoutNs = TickTimeoutNs<FakeTickInstant>;
+pub type FakeTimeoutState = TickTimeoutState<FakeTickInstant>;
 
-static COUNTER: AtomicU32 = AtomicU32::new(0);
-
-#[derive(Clone, Copy)]
-pub struct FakeInstant {
-    count: u32,
+#[derive(Clone)]
+pub struct FakeTickInstant {
+    count: u64,
 }
 
-impl TickInstant for FakeInstant {
+impl TickInstant for FakeTickInstant {
+    #[inline]
     fn frequency() -> KilohertzU32 {
         1.kHz()
     }
 
+    #[inline]
     fn now() -> Self {
-        COUNTER.fetch_add(1, Ordering::Relaxed);
-        Self {
-            count: COUNTER.load(Ordering::Relaxed),
-        }
+        Self { count: 0 }
     }
 
-    fn tick_since(self, earlier: Self) -> u32 {
-        self.count.wrapping_sub(earlier.count)
+    #[inline]
+    fn elapsed(&mut self) -> TickDuration<Self> {
+        self.count = self.count.wrapping_add(1);
+        TickDuration::from_ticks(self.count)
+    }
+
+    #[inline]
+    fn add(&self, dur: &TickDuration<Self>) -> Self {
+        Self {
+            count: self.count.wrapping_add(dur.ticks()),
+        }
     }
 }

@@ -1,4 +1,5 @@
 use super::{
+    TickDuration,
     fugit::{KilohertzU32, RateExtU32},
     prelude::*,
 };
@@ -62,19 +63,33 @@ impl TimeoutState for StdTimeoutState {
     }
 }
 
-impl TickInstant for Instant {
+#[derive(Clone)]
+pub struct StdTickInstant(Instant);
+
+impl TickInstant for StdTickInstant {
+    #[inline]
     fn frequency() -> KilohertzU32 {
         1.MHz()
     }
 
-    #[inline(always)]
+    #[inline]
     fn now() -> Self {
-        Instant::now()
+        StdTickInstant(Instant::now())
     }
 
-    #[inline(always)]
-    fn tick_since(self, earlier: Self) -> u32 {
-        self.duration_since(earlier).as_micros() as u32
+    #[inline]
+    fn elapsed(&mut self) -> TickDuration<Self> {
+        let ticks = Instant::now().duration_since(self.0).as_micros() as u64;
+        TickDuration::from_ticks(ticks)
+    }
+
+    #[inline]
+    fn add(&self, dur: &TickDuration<Self>) -> Self {
+        Self(
+            self.0
+                .checked_add(Duration::from_micros(dur.ticks()))
+                .unwrap(),
+        )
     }
 }
 
@@ -123,13 +138,13 @@ mod tests {
 
     #[test]
     fn tick_timeout() {
-        test_timeout(TickTimeoutNs::<Instant>::new());
+        test_timeout(TickTimeoutNs::<StdTickInstant>::new());
     }
 
     #[test]
     fn tick_instant() {
-        let now = <Instant as TickInstant>::now();
+        let mut now = StdTickInstant::now();
         sleep(Duration::from_millis(200));
-        assert!(now.tick_elapsed() - 200_000 < 1000);
+        assert!(now.elapsed().ticks() - 200_000 < 1000);
     }
 }

@@ -1,4 +1,4 @@
-use super::prelude::*;
+use super::{TickDuration, prelude::*};
 use core::marker::PhantomData;
 
 #[derive(Default)]
@@ -23,54 +23,45 @@ where
 
     #[inline]
     fn start_ns(&self, timeout: u32) -> Self::TimeoutState {
-        TickTimeoutState::<T>::new_ns(timeout)
+        TickTimeoutState::<T>::new_nanos(timeout)
     }
 
     #[inline]
     fn start_us(&self, timeout: u32) -> Self::TimeoutState {
-        TickTimeoutState::<T>::new_us(timeout)
+        TickTimeoutState::<T>::new_micros(timeout)
     }
 
     #[inline]
     fn start_ms(&self, timeout: u32) -> Self::TimeoutState {
-        TickTimeoutState::<T>::new_ms(timeout)
+        TickTimeoutState::<T>::new_millis(timeout)
     }
 }
 
 pub struct TickTimeoutState<T: TickInstant> {
-    tick: T,
-    timeout_tick: u64,
-    elapsed_tick: u64,
+    time: T,
+    timeout: TickDuration<T>,
 }
 
 impl<T> TickTimeoutState<T>
 where
     T: TickInstant,
 {
-    pub fn new_ns(timeout: u32) -> Self {
-        let ns = timeout as u64;
-        let timeout_tick = (ns * T::frequency().to_kHz() as u64).div_ceil(1_000_000);
-        Self::new(timeout_tick)
+    pub fn new_nanos(timeout: u32) -> Self {
+        Self::new(TickDuration::from_nanos(timeout))
     }
 
-    pub fn new_us(timeout: u32) -> Self {
-        let us = timeout as u64;
-        let timeout_tick = (us * T::frequency().to_kHz() as u64).div_ceil(1_000);
-        Self::new(timeout_tick)
+    pub fn new_micros(timeout: u32) -> Self {
+        Self::new(TickDuration::from_micros(timeout))
     }
 
-    pub fn new_ms(timeout: u32) -> Self {
-        let ms = timeout as u64;
-        let frequency = T::frequency().to_kHz() as u64;
-        let timeout_tick = ms * frequency;
-        Self::new(timeout_tick)
+    pub fn new_millis(timeout: u32) -> Self {
+        Self::new(TickDuration::from_millis(timeout))
     }
 
-    fn new(timeout_tick: u64) -> Self {
+    fn new(timeout: TickDuration<T>) -> Self {
         Self {
-            tick: T::now(),
-            timeout_tick: timeout_tick,
-            elapsed_tick: 0,
+            time: T::now(),
+            timeout,
         }
     }
 }
@@ -82,14 +73,8 @@ where
     /// Can be reused without calling `restart()`.
     #[inline]
     fn timeout(&mut self) -> bool {
-        let now = T::now();
-        self.elapsed_tick = self
-            .elapsed_tick
-            .saturating_add(now.tick_since(self.tick) as u64);
-        self.tick = now;
-
-        if self.elapsed_tick >= self.timeout_tick {
-            self.elapsed_tick -= self.timeout_tick;
+        if self.time.timeout(&self.timeout) {
+            self.time = self.time.add(&self.timeout);
             return true;
         }
         false
@@ -97,8 +82,7 @@ where
 
     #[inline(always)]
     fn restart(&mut self) {
-        self.tick = T::now();
-        self.elapsed_tick = 0;
+        self.time = T::now();
     }
 }
 
@@ -133,25 +117,30 @@ mod tests {
             }
         }
 
-        fn tick_since(self, earlier: Self) -> u32 {
-            self.tick.wrapping_sub(earlier.tick) as u32
+        fn elapsed(&mut self) -> TickDuration<Self> {
+            TickDuration::from_ticks(Self::now().tick.wrapping_sub(self.tick))
+        }
+
+        fn add(&self, dur: &TickDuration<Self>) -> Self {
+            Self {
+                tick: self.tick + dur.ticks(),
+            }
         }
     }
 
     #[test]
     fn tick_timeout() {
-        let now = MockInstant::now();
-        assert_eq!(now.tick_elapsed(), 0);
+        let mut now = MockInstant::now();
+        assert_eq!(now.elapsed().ticks(), 0);
         MockInstant::add_time(10.nanos());
-        assert_eq!(now.tick_elapsed(), 10);
+        assert_eq!(now.elapsed().ticks(), 10);
         MockInstant::add_time(1.millis());
-        assert_eq!(now.tick_elapsed(), 1_000_010);
+        assert_eq!(now.elapsed().ticks(), 1_000_010);
         MockInstant::add_time(10.micros());
-        let now2 = MockInstant::now();
-        assert_eq!(now2.tick_since(now), 1_010_010);
+        let mut now2 = MockInstant::now();
+        assert_eq!(now.elapsed().ticks(), 1_010_010);
         MockInstant::add_time(10.micros());
-        let now3 = MockInstant::now();
-        assert_eq!(now3.tick_since(now2), 10_000);
+        assert_eq!(now2.elapsed().ticks(), 10_000);
 
         let mut t = TickTimeoutNs::<MockInstant>::new().start_ns(100);
         assert!(!t.timeout());
@@ -216,11 +205,11 @@ mod tests {
         }));
         assert_eq!(count, 10);
 
-        let t = TickTimeoutState::<MockInstant>::new_us(40_000_000);
-        assert_eq!(t.timeout_tick, 40_000_000_000);
+        let t = TickTimeoutState::<MockInstant>::new_micros(40_000_000);
+        assert_eq!(t.timeout.ticks(), 40_000_000_000);
 
-        let mut t = TickTimeoutState::<MockInstant>::new_ms(40_000);
-        assert_eq!(t.timeout_tick, 40_000_000_000);
+        let mut t = TickTimeoutState::<MockInstant>::new_millis(40_000);
+        assert_eq!(t.timeout.ticks(), 40_000_000_000);
 
         assert!(!t.timeout());
 
@@ -228,7 +217,6 @@ mod tests {
             MockInstant::add_time(999.millis());
             assert!(!t.timeout());
         }
-        assert!(t.elapsed_tick > 0);
         MockInstant::add_time(100.millis());
         assert!(t.timeout());
         assert!(!t.timeout());

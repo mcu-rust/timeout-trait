@@ -39,10 +39,8 @@ where
 
 pub struct TickTimeoutState<T: TickInstant> {
     tick: T,
-    timeout_tick: u32,
-    elapsed_tick: u32,
-    round: u32,
-    elapsed_round: u32,
+    timeout_tick: u64,
+    elapsed_tick: u64,
 }
 
 impl<T> TickTimeoutState<T>
@@ -68,22 +66,11 @@ where
         Self::new(timeout_tick)
     }
 
-    fn new(mut timeout_tick: u64) -> Self {
-        let mut round = 1;
-        while timeout_tick > (u32::MAX >> 1) as u64 {
-            if (timeout_tick | 1) == 1 {
-                timeout_tick += 0b10;
-            }
-            timeout_tick >>= 1;
-            round <<= 1;
-        }
-
+    fn new(timeout_tick: u64) -> Self {
         Self {
             tick: T::now(),
-            timeout_tick: timeout_tick as u32,
+            timeout_tick: timeout_tick,
             elapsed_tick: 0,
-            round,
-            elapsed_round: 0,
         }
     }
 }
@@ -96,16 +83,14 @@ where
     #[inline]
     fn timeout(&mut self) -> bool {
         let now = T::now();
-        self.elapsed_tick = self.elapsed_tick.saturating_add(now.tick_since(self.tick));
+        self.elapsed_tick = self
+            .elapsed_tick
+            .saturating_add(now.tick_since(self.tick) as u64);
         self.tick = now;
 
         if self.elapsed_tick >= self.timeout_tick {
             self.elapsed_tick -= self.timeout_tick;
-            self.elapsed_round += 1;
-            if self.elapsed_round >= self.round {
-                self.elapsed_round -= self.round;
-                return true;
-            }
+            return true;
         }
         false
     }
@@ -114,26 +99,25 @@ where
     fn restart(&mut self) {
         self.tick = T::now();
         self.elapsed_tick = 0;
-        self.elapsed_round = 0;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core::sync::atomic::{AtomicU32, Ordering};
+    use core::sync::atomic::{AtomicU64, Ordering};
     use fugit::{ExtU32, KilohertzU32, NanosDurationU32, RateExtU32};
 
-    static TICK_SOURCE: AtomicU32 = AtomicU32::new(0);
+    static TICK_SOURCE: AtomicU64 = AtomicU64::new(0);
 
     #[derive(Clone, Copy)]
     pub struct MockInstant {
-        tick: u32,
+        tick: u64,
     }
 
     impl MockInstant {
         fn add_time(t: NanosDurationU32) {
-            let tick = t.to_nanos();
+            let tick = t.to_nanos() as u64;
             TICK_SOURCE.fetch_add(tick, Ordering::Relaxed);
         }
     }
@@ -150,7 +134,7 @@ mod tests {
         }
 
         fn tick_since(self, earlier: Self) -> u32 {
-            self.tick.wrapping_sub(earlier.tick)
+            self.tick.wrapping_sub(earlier.tick) as u32
         }
     }
 
@@ -233,12 +217,10 @@ mod tests {
         assert_eq!(count, 10);
 
         let t = TickTimeoutState::<MockInstant>::new_us(40_000_000);
-        assert_eq!(t.round, 32);
-        assert_eq!(t.timeout_tick, 1_250_000_000);
+        assert_eq!(t.timeout_tick, 40_000_000_000);
 
         let mut t = TickTimeoutState::<MockInstant>::new_ms(40_000);
-        assert_eq!(t.round, 32);
-        assert_eq!(t.timeout_tick, 1_250_000_000);
+        assert_eq!(t.timeout_tick, 40_000_000_000);
 
         assert!(!t.timeout());
 
@@ -246,11 +228,9 @@ mod tests {
             MockInstant::add_time(999.millis());
             assert!(!t.timeout());
         }
-        assert_eq!(t.elapsed_round, 31);
         assert!(t.elapsed_tick > 0);
         MockInstant::add_time(100.millis());
         assert!(t.timeout());
-        assert_eq!(t.elapsed_round, 0);
         assert!(!t.timeout());
 
         for _ in 0..39 {
@@ -271,7 +251,8 @@ mod tests {
 mod tests_fugit {
     use core::ops::Div;
     use fugit::{
-        ExtU32, ExtU32Ceil, KilohertzU32, MicrosDurationU32, MillisDurationU32, RateExtU32,
+        ExtU32, ExtU32Ceil, KilohertzU32, MicrosDurationU32, MillisDurationU32, NanosDurationU64,
+        RateExtU32,
     };
 
     #[test]
@@ -301,6 +282,14 @@ mod tests_fugit {
         assert_eq!(dur.to_millis(), 0);
         let dur: MillisDurationU32 = dur.ticks().micros_at_least();
         assert_eq!(dur.ticks(), 1);
+
+        let a = MicrosDurationU32::micros(100);
+        let b = MicrosDurationU32::micros(99);
+        assert!(b < a);
+
+        let a = NanosDurationU64::micros(100);
+        let b = NanosDurationU64::micros(101);
+        assert!(b > a);
     }
 
     #[test]

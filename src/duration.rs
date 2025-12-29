@@ -29,14 +29,30 @@ impl<T: TickInstant> TickDuration<T> {
         Self::from_ticks((ns * T::frequency().to_kHz() as u64).div_ceil(1_000_000))
     }
 
+    pub fn as_nanos(&self) -> u32 {
+        self.ticks
+            .saturating_mul(1_000_000)
+            .div_ceil(T::frequency().to_kHz() as u64) as u32
+    }
+
     pub fn from_micros(timeout: u32) -> Self {
         let us = timeout as u64;
         Self::from_ticks((us * T::frequency().to_kHz() as u64).div_ceil(1_000))
     }
 
+    pub fn as_micros(&self) -> u32 {
+        self.ticks
+            .saturating_mul(1_000)
+            .div_ceil(T::frequency().to_kHz() as u64) as u32
+    }
+
     pub fn from_millis(timeout: u32) -> Self {
         let ms = timeout as u64;
         Self::from_ticks(ms * T::frequency().to_kHz() as u64)
+    }
+
+    pub fn as_millis(&self) -> u32 {
+        self.ticks.div_ceil(T::frequency().to_kHz() as u64) as u32
     }
 
     #[inline]
@@ -72,5 +88,29 @@ impl<T: TickInstant> ops::Sub<Self> for &TickDuration<T> {
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         TickDuration::from_ticks(self.ticks.saturating_sub(rhs.ticks))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    type Duration = TickDuration<FakeTickInstant>;
+
+    #[test]
+    fn duration() {
+        let d = Duration::from_nanos(123);
+        assert_eq!(d.as_nanos(), 123);
+
+        let d = Duration::from_nanos(123_000);
+        assert_eq!(d.as_nanos(), 123_000);
+
+        let d = Duration::from_micros(5234);
+        assert_eq!(d.as_micros(), 5234);
+
+        let d = Duration::from_millis(472);
+        assert_eq!(d.as_millis(), 472);
+
+        let d = Duration::from_micros(123);
+        assert_eq!(d.as_millis(), 1);
     }
 }

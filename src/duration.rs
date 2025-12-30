@@ -94,7 +94,8 @@ impl<T: TickInstant> ops::Sub<Self> for &TickDuration<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    type Duration = TickDuration<FakeTickInstant>;
+    use crate::mock::MockInstant;
+    type Duration = TickDuration<MockInstant>;
 
     #[test]
     fn duration() {

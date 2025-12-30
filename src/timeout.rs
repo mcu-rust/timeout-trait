@@ -21,6 +21,10 @@ where
         Self::new(TickDuration::from_millis(timeout))
     }
 
+    pub fn from_duration(timeout: &TickDuration<T>) -> Self {
+        Self::new(timeout.clone())
+    }
+
     fn new(timeout: TickDuration<T>) -> Self {
         Self {
             time: T::now(),
@@ -52,42 +56,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core::sync::atomic::{AtomicU64, Ordering};
-    use fugit::{ExtU32, KilohertzU32, NanosDurationU32, RateExtU32};
-
-    static TICK_SOURCE: AtomicU64 = AtomicU64::new(0);
-
-    #[derive(Clone, Copy)]
-    pub struct MockInstant {
-        tick: u64,
-    }
-
-    impl MockInstant {
-        fn add_time(t: NanosDurationU32) {
-            let tick = t.to_nanos() as u64;
-            TICK_SOURCE.fetch_add(tick, Ordering::Relaxed);
-        }
-    }
-
-    impl TickInstant for MockInstant {
-        fn frequency() -> KilohertzU32 {
-            1000.MHz()
-        }
-
-        fn now() -> Self {
-            Self {
-                tick: TICK_SOURCE.load(Ordering::Relaxed),
-            }
-        }
-
-        fn elapsed(&mut self) -> TickDuration<Self> {
-            TickDuration::from_ticks(Self::now().tick.wrapping_sub(self.tick))
-        }
-
-        fn move_forward(&mut self, dur: &TickDuration<Self>) {
-            self.tick += dur.ticks();
-        }
-    }
+    use crate::mock::MockInstant;
+    use fugit::ExtU32;
 
     #[test]
     fn tick_timeout() {

@@ -12,7 +12,7 @@ pub struct FakeTickInstant {
 impl TickInstant for FakeTickInstant {
     #[inline]
     fn frequency() -> KilohertzU32 {
-        1000.MHz()
+        1.kHz()
     }
 
     #[inline]

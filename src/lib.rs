@@ -15,6 +15,9 @@ pub mod prelude;
 pub mod std_impls;
 pub mod timeout;
 
+#[cfg(all(feature = "std", test))]
+mod mock;
+
 pub use delay::TickDelay;
 pub use duration::TickDuration;
 pub use embedded_hal;

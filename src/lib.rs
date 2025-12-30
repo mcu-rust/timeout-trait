@@ -1,5 +1,8 @@
 //! Traits used to wait and timeout in a `no-std` embedded system.
 //!
+//! It requires an implementation of [`TickInstant`]. In return, it provides [`TickTimeout`]
+//! and [`TickDuration`], which can be used for timeout-related operations. It also includes
+//! an implementation of `DelayNs` called [`TickDelay`], suitable for bare-metal systems.
 //!
 //! # Cargo Features
 //!
@@ -20,13 +23,13 @@ mod mock;
 
 pub use delay::TickDelay;
 pub use duration::TickDuration;
-pub use embedded_hal;
-pub use fake_impls::*;
-pub use fugit::{self, KilohertzU32, MicrosDurationU32};
+pub use embedded_hal::delay::DelayNs;
+pub use fugit::{self, KilohertzU32};
 pub use timeout::TickTimeout;
 
 /// It doesn't require operation interfaces on `TickInstant` itself.
-/// Embedded systems can thus implement only the relative time version.
+/// Embedded systems can thus implement only the relative time version,
+/// which means you can not use it as a global timestamp.
 pub trait TickInstant: Clone {
     fn frequency() -> KilohertzU32;
     fn now() -> Self;

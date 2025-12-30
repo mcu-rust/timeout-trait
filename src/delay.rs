@@ -1,6 +1,4 @@
-use crate::TickDuration;
-
-use super::{embedded_hal::delay::DelayNs, prelude::*};
+use crate::*;
 use core::marker::PhantomData;
 
 /// [`DelayNs`] implementation

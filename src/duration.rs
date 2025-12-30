@@ -30,9 +30,13 @@ impl<T: TickInstant> TickDuration<T> {
     }
 
     pub fn as_nanos(&self) -> u32 {
-        self.ticks
-            .saturating_mul(1_000_000)
-            .div_ceil(T::frequency().to_kHz() as u64) as u32
+        if let Some(t) = self.ticks.checked_mul(1_000_000) {
+            let rst = t.div_ceil(T::frequency().to_kHz() as u64);
+            if rst <= u32::MAX as u64 {
+                return rst as u32;
+            }
+        }
+        panic!();
     }
 
     pub fn from_micros(timeout: u32) -> Self {
@@ -41,9 +45,13 @@ impl<T: TickInstant> TickDuration<T> {
     }
 
     pub fn as_micros(&self) -> u32 {
-        self.ticks
-            .saturating_mul(1_000)
-            .div_ceil(T::frequency().to_kHz() as u64) as u32
+        if let Some(t) = self.ticks.checked_mul(1_000) {
+            let rst = t.div_ceil(T::frequency().to_kHz() as u64);
+            if rst <= u32::MAX as u64 {
+                return rst as u32;
+            }
+        }
+        panic!();
     }
 
     pub fn from_millis(timeout: u32) -> Self {
@@ -52,7 +60,11 @@ impl<T: TickInstant> TickDuration<T> {
     }
 
     pub fn as_millis(&self) -> u32 {
-        self.ticks.div_ceil(T::frequency().to_kHz() as u64) as u32
+        let rst = self.ticks.div_ceil(T::frequency().to_kHz() as u64);
+        if rst <= u32::MAX as u64 {
+            return rst as u32;
+        }
+        panic!();
     }
 
     #[inline]

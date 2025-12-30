@@ -1,7 +1,6 @@
-use super::{
-    TickDuration,
+use crate::{
     fugit::{KilohertzU32, RateExtU32},
-    prelude::*,
+    *,
 };
 
 #[derive(Clone)]

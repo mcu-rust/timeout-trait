@@ -1,4 +1,4 @@
-use super::{TickDuration, prelude::*};
+use crate::*;
 
 pub struct TickTimeout<T: TickInstant> {
     time: T,

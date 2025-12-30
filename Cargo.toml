@@ -8,7 +8,7 @@
     name = "timeout-trait"
     readme = "README.md"
     repository = "https://github.com/mcu-rust/timeout-trait"
-    version = "0.5.0"
+    version = "0.5.1"
 
     [package.metadata.docs.rs]
         features = ["std"]

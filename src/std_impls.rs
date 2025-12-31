@@ -45,7 +45,7 @@ mod tests {
     }
 
     fn test_timeout<T: TickInstant>() {
-        let mut t = TickTimeout::<T>::from_millis(500);
+        let mut t = TickTimeout::<T>::millis(500);
         assert!(!t.timeout());
         sleep(Duration::from_millis(260));
         assert!(!t.timeout());
@@ -68,7 +68,7 @@ mod tests {
         }));
 
         let mut u = UseTimeout {
-            interval: TickTimeout::<T>::from_millis(1),
+            interval: TickTimeout::<T>::millis(1),
         };
         u.interval.timeout();
     }

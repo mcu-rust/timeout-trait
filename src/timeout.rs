@@ -9,15 +9,15 @@ impl<T> TickTimeout<T>
 where
     T: TickInstant,
 {
-    pub fn from_nanos(timeout: u32) -> Self {
+    pub fn nanos(timeout: u32) -> Self {
         Self::new(TickDuration::from_nanos(timeout))
     }
 
-    pub fn from_micros(timeout: u32) -> Self {
+    pub fn micros(timeout: u32) -> Self {
         Self::new(TickDuration::from_micros(timeout))
     }
 
-    pub fn from_millis(timeout: u32) -> Self {
+    pub fn millis(timeout: u32) -> Self {
         Self::new(TickDuration::from_millis(timeout))
     }
 
@@ -25,7 +25,7 @@ where
         Self::new(timeout.clone())
     }
 
-    fn new(timeout: TickDuration<T>) -> Self {
+    pub fn new(timeout: TickDuration<T>) -> Self {
         Self {
             time: T::now(),
             timeout,
@@ -73,7 +73,7 @@ mod tests {
         MockInstant::add_time(10.micros());
         assert_eq!(now2.elapsed().ticks(), 10_000);
 
-        let mut t = TickTimeout::<MockInstant>::from_nanos(100);
+        let mut t = TickTimeout::<MockInstant>::nanos(100);
         assert!(!t.timeout());
         MockInstant::add_time(10.nanos());
         assert!(!t.timeout());
@@ -91,7 +91,7 @@ mod tests {
         MockInstant::add_time(10.nanos());
         assert!(t.timeout());
 
-        let mut t = TickTimeout::<MockInstant>::from_micros(100);
+        let mut t = TickTimeout::<MockInstant>::micros(100);
         assert!(!t.timeout());
         MockInstant::add_time(10.micros());
         assert!(!t.timeout());
@@ -109,7 +109,7 @@ mod tests {
         MockInstant::add_time(10.micros());
         assert!(t.timeout());
 
-        let mut t = TickTimeout::<MockInstant>::from_millis(100);
+        let mut t = TickTimeout::<MockInstant>::millis(100);
         assert!(!t.timeout());
         MockInstant::add_time(10.millis());
         assert!(!t.timeout());
@@ -137,10 +137,10 @@ mod tests {
         }));
         assert_eq!(count, 10);
 
-        let t = TickTimeout::<MockInstant>::from_micros(40_000_000);
+        let t = TickTimeout::<MockInstant>::micros(40_000_000);
         assert_eq!(t.timeout.ticks(), 40_000_000_000);
 
-        let mut t = TickTimeout::<MockInstant>::from_millis(40_000);
+        let mut t = TickTimeout::<MockInstant>::millis(40_000);
         assert_eq!(t.timeout.ticks(), 40_000_000_000);
 
         assert!(!t.timeout());

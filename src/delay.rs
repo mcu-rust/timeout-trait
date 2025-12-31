@@ -22,7 +22,7 @@ where
     #[inline]
     fn delay_ns(&mut self, ns: u32) {
         let mut t = T::now();
-        let dur = TickDuration::<T>::from_nanos(ns);
+        let dur = TickDuration::<T>::nanos(ns);
         while !t.timeout(&dur) {
             // For unit test
             #[cfg(feature = "std")]

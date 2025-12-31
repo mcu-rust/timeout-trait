@@ -28,7 +28,7 @@ impl TickInstant for StdTickInstant {
     fn move_forward(&mut self, dur: &TickDuration<Self>) {
         self.0 = self
             .0
-            .checked_add(Duration::from_micros(dur.ticks()))
+            .checked_add(Duration::from_micros(dur.as_ticks()))
             .unwrap();
     }
 }
@@ -61,7 +61,7 @@ mod tests {
         assert!(t.timeout());
         assert!(!t.timeout());
 
-        let dur = TickDuration::<T>::from_nanos(100);
+        let dur = TickDuration::<T>::nanos(100);
         assert!(T::now().timeout_with(&dur, || {
             sleep(Duration::from_nanos(1));
             true
@@ -82,6 +82,6 @@ mod tests {
     fn tick_instant() {
         let mut now = StdTickInstant::now();
         sleep(Duration::from_millis(200));
-        assert!(now.elapsed().ticks() - 200_000 < 1000);
+        assert!(now.elapsed().as_ticks() - 200_000 < 1000);
     }
 }

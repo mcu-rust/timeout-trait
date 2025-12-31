@@ -27,6 +27,6 @@ impl TickInstant for FakeTickInstant {
 
     #[inline]
     fn move_forward(&mut self, dur: &TickDuration<Self>) {
-        self.elapsed = self.elapsed.saturating_sub(dur.ticks());
+        self.elapsed = self.elapsed.saturating_sub(dur.as_ticks());
     }
 }

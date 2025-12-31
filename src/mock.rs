@@ -32,6 +32,6 @@ impl TickInstant for MockInstant {
     }
 
     fn move_forward(&mut self, dur: &TickDuration<Self>) {
-        self.tick += dur.ticks();
+        self.tick += dur.as_ticks();
     }
 }

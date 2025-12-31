@@ -20,11 +20,11 @@ impl<T: TickInstant> TickDuration<T> {
     }
 
     #[inline]
-    pub const fn ticks(&self) -> u64 {
+    pub const fn as_ticks(&self) -> u64 {
         self.ticks
     }
 
-    pub fn from_nanos(timeout: u32) -> Self {
+    pub fn nanos(timeout: u32) -> Self {
         let ns = timeout as u64;
         Self::from_ticks((ns * T::frequency().to_kHz() as u64).div_ceil(1_000_000))
     }
@@ -39,7 +39,7 @@ impl<T: TickInstant> TickDuration<T> {
         panic!();
     }
 
-    pub fn from_micros(timeout: u32) -> Self {
+    pub fn micros(timeout: u32) -> Self {
         let us = timeout as u64;
         Self::from_ticks((us * T::frequency().to_kHz() as u64).div_ceil(1_000))
     }
@@ -54,7 +54,7 @@ impl<T: TickInstant> TickDuration<T> {
         panic!();
     }
 
-    pub fn from_millis(timeout: u32) -> Self {
+    pub fn millis(timeout: u32) -> Self {
         let ms = timeout as u64;
         Self::from_ticks(ms * T::frequency().to_kHz() as u64)
     }
@@ -111,19 +111,19 @@ mod tests {
 
     #[test]
     fn duration() {
-        let d = Duration::from_nanos(123);
+        let d = Duration::nanos(123);
         assert_eq!(d.as_nanos(), 123);
 
-        let d = Duration::from_nanos(123_000);
+        let d = Duration::nanos(123_000);
         assert_eq!(d.as_nanos(), 123_000);
 
-        let d = Duration::from_micros(5234);
+        let d = Duration::micros(5234);
         assert_eq!(d.as_micros(), 5234);
 
-        let d = Duration::from_millis(472);
+        let d = Duration::millis(472);
         assert_eq!(d.as_millis(), 472);
 
-        let d = Duration::from_micros(123);
+        let d = Duration::micros(123);
         assert_eq!(d.as_millis(), 1);
     }
 }

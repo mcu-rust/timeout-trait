@@ -1,13 +1,4 @@
-//! Traits used to wait and timeout in a `no-std` embedded system.
-//!
-//! It requires an implementation of [`TickInstant`]. In return, it provides [`TickTimeout`]
-//! and [`TickDuration`], which can be used for timeout-related operations. It also includes
-//! an implementation of `DelayNs` called [`TickDelay`], suitable for bare-metal systems.
-//!
-//! # Cargo Features
-//!
-//! - `std`: Used for unit test. Disabled by default.
-
+#![doc = include_str!("../README.md")]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod delay;

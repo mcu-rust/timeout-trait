@@ -10,8 +10,6 @@ Traits used to wait and timeout in a `no-std` embedded system.
 
 It requires an implementation of `TickInstant`. In return, it provides `TickTimeout` and `TickDuration`, which can be used for timeout-related operations. It also includes an implementation of `DelayNs` called `TickDelay`, suitable for bare-metal systems.
 
-For more details, see the [documentation](https://docs.rs/timeout-trait).
-
 
 ## Cargo Features
 
